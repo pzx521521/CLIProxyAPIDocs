@@ -90,6 +90,13 @@ routing:
 # When true, enable authentication for the WebSocket API (/v1/ws).
 ws-auth: false
 
+# When > 0, emit blank lines every N seconds for non-streaming responses to prevent idle timeouts.
+nonstream-keepalive-interval: 0
+
+# When true, enable official Codex instructions injection for Codex API requests.
+# When false (default), CodexInstructionsForModel returns immediately without modification.
+codex-instructions-enabled: false
+
 # Streaming behavior (SSE keep-alives + safe bootstrap retries).
 streaming:
   keepalive-seconds: 15   # Default: 0 (disabled). <= 0 disables keep-alives.
@@ -147,6 +154,15 @@ claude-api-key:
       - "claude-3-*"               # wildcard matching prefix (e.g. claude-3-7-sonnet-20250219)
       - "*-thinking"               # wildcard matching suffix (e.g. claude-opus-4-5-thinking)
       - "*haiku*"                  # wildcard matching substring (e.g. claude-3-5-haiku-20241022)
+    cloak:                         # optional: request cloaking for non-Claude-Code clients
+      mode: "auto"                 # "auto" (default): cloak only when client is not Claude Code
+                                   # "always": always apply cloaking
+                                   # "never": never apply cloaking
+      strict-mode: false           # false (default): prepend Claude Code prompt to user system messages
+                                   # true: strip all user system messages, keep only Claude Code prompt
+      sensitive-words:             # optional: words to obfuscate with zero-width characters
+        - "API"
+        - "proxy"
 
 # OpenAI compatibility providers
 openai-compatibility:
@@ -211,36 +227,49 @@ ampcode:
     - from: "claude-haiku-4-5-20251001"
       to: "gemini-2.5-flash"
 
-# Global OAuth model name mappings (per channel)
-# These mappings rename model IDs for both model listing and request routing.
+# Global OAuth model name aliases (per channel)
+# These aliases rename model IDs for both model listing and request routing.
 # Supported channels: gemini-cli, vertex, aistudio, antigravity, claude, codex, qwen, iflow.
-# NOTE: Mappings do not apply to gemini-api-key, codex-api-key, claude-api-key, openai-compatibility, vertex-api-key, or ampcode.
-oauth-model-mappings:
-  gemini-cli:
-    - name: "gemini-2.5-pro"          # original model name under this channel
-      alias: "g2.5p"                  # client-visible alias
-      fork: true                      # when true, keep original and also add the alias as an extra model (default: false)
-  vertex:
-    - name: "gemini-2.5-pro"
-      alias: "g2.5p"
-  aistudio:
-    - name: "gemini-2.5-pro"
-      alias: "g2.5p"
+# NOTE: Aliases do not apply to gemini-api-key, codex-api-key, claude-api-key, openai-compatibility, vertex-api-key, or ampcode.
+# You can repeat the same name with different aliases to expose multiple client model names.
+oauth-model-alias:
   antigravity:
-    - name: "gemini-3-pro-preview"
-      alias: "g3p"
-  claude:
-    - name: "claude-sonnet-4-5-20250929"
-      alias: "cs4.5"
-  codex:
-    - name: "gpt-5"
-      alias: "g5"
-  qwen:
-    - name: "qwen3-coder-plus"
-      alias: "qwen-plus"
-  iflow:
-    - name: "glm-4.7"
-      alias: "glm-god"
+    - name: "rev19-uic3-1p"
+      alias: "gemini-2.5-computer-use-preview-10-2025"
+    - name: "gemini-3-pro-image"
+      alias: "gemini-3-pro-image-preview"
+    - name: "gemini-3-pro-high"
+      alias: "gemini-3-pro-preview"
+    - name: "gemini-3-flash"
+      alias: "gemini-3-flash-preview"
+    - name: "claude-sonnet-4-5"
+      alias: "gemini-claude-sonnet-4-5"
+    - name: "claude-sonnet-4-5-thinking"
+      alias: "gemini-claude-sonnet-4-5-thinking"
+    - name: "claude-opus-4-5-thinking"
+      alias: "gemini-claude-opus-4-5-thinking"
+#   gemini-cli:
+#     - name: "gemini-2.5-pro"          # original model name under this channel
+#       alias: "g2.5p"                  # client-visible alias
+#       fork: true                      # when true, keep original and also add the alias as an extra model (default: false)
+#   vertex:
+#     - name: "gemini-2.5-pro"
+#       alias: "g2.5p"
+#   aistudio:
+#     - name: "gemini-2.5-pro"
+#       alias: "g2.5p"
+#   claude:
+#     - name: "claude-sonnet-4-5-20250929"
+#       alias: "cs4.5"
+#   codex:
+#     - name: "gpt-5"
+#       alias: "g5"
+#   qwen:
+#     - name: "qwen3-coder-plus"
+#       alias: "qwen-plus"
+#   iflow:
+#     - name: "glm-4.7"
+#       alias: "glm-god"
 
 # OAuth provider excluded models
 oauth-excluded-models:
@@ -269,13 +298,32 @@ payload:
   default: # Default rules only set parameters when they are missing in the payload.
     - models:
         - name: "gemini-2.5-pro" # Supports wildcards (e.g., "gemini-*")
-          protocol: "gemini" # restricts the rule to a specific protocol, options: openai, gemini, claude, codex
+          protocol: "gemini" # restricts the rule to a specific protocol, options: openai, gemini, claude, codex, antigravity
       params: # JSON path (gjson/sjson syntax) -> value
         "generationConfig.thinkingConfig.thinkingBudget": 32768
+  default-raw: # Default raw rules set parameters using raw JSON when missing (must be valid JSON).
+    - models:
+        - name: "gemini-2.5-pro" # Supports wildcards (e.g., "gemini-*")
+          protocol: "gemini" # restricts the rule to a specific protocol, options: openai, gemini, claude, codex, antigravity
+      params: # JSON path (gjson/sjson syntax) -> raw JSON value (strings are used as-is, must be valid JSON)
+        "generationConfig.responseJsonSchema": "{\"type\":\"object\",\"properties\":{\"answer\":{\"type\":\"string\"}}}"
   override: # Override rules always set parameters, overwriting any existing values.
     - models:
         - name: "gpt-*" # Supports wildcards (e.g., "gpt-*")
-          protocol: "codex" # restricts the rule to a specific protocol, options: openai, gemini, claude, codex
+          protocol: "codex" # restricts the rule to a specific protocol, options: openai, gemini, claude, codex, antigravity
       params: # JSON path (gjson/sjson syntax) -> value
         "reasoning.effort": "high"
+  override-raw: # Override raw rules always set parameters using raw JSON (must be valid JSON).
+    - models:
+        - name: "gpt-*" # Supports wildcards (e.g., "gpt-*")
+          protocol: "codex" # restricts the rule to a specific protocol, options: openai, gemini, claude, codex, antigravity
+      params: # JSON path (gjson/sjson syntax) -> raw JSON value (strings are used as-is, must be valid JSON)
+        "response_format": "{\"type\":\"json_schema\",\"json_schema\":{\"name\":\"answer\",\"schema\":{\"type\":\"object\"}}}"
+  filter: # Filter rules remove specified parameters from the payload.
+    - models:
+        - name: "gemini-2.5-pro" # Supports wildcards (e.g., "gemini-*")
+          protocol: "gemini" # restricts the rule to a specific protocol, options: openai, gemini, claude, codex, antigravity
+      params: # JSON paths (gjson/sjson syntax) to remove from the payload
+        - "generationConfig.thinkingConfig.thinkingBudget"
+        - "generationConfig.responseJsonSchema"
 ```

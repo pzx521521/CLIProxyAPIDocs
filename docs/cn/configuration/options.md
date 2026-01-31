@@ -24,6 +24,8 @@
 | `max-retry-interval` | integer | `30` | 冷却凭据等待秒数上限，超出即触发重试。 |
 | `routing.strategy` | string | `"round-robin"` | 多匹配凭据的选择策略：`round-robin` 或 `fill-first`。 |
 | `ws-auth` | boolean | `false` | 是否为 `/v1/ws` 启用认证。 |
+| `nonstream-keepalive-interval` | integer | `0` | 非 SSE 流每隔 N 秒发送空行防止空闲超时；0 禁用。 |
+| `codex-instructions-enabled` | boolean | `false` | 是否为 Codex API 请求启用官方 Codex 指令注入。 |
 | `streaming.keepalive-seconds` | integer | `0` | SSE 保活间隔，≤0 禁用。 |
 | `streaming.bootstrap-retries` | integer | `0` | 首字节前的安全重试次数。 |
 
@@ -83,6 +85,9 @@
 | `claude-api-key.*.models.*.name` | string | `""` | 上游模型名。 |
 | `claude-api-key.*.models.*.alias` | string | `""` | 客户端别名。 |
 | `claude-api-key.*.excluded-models` | string[] | `[]` | 排除模型（支持通配符）。 |
+| `claude-api-key.*.cloak.mode` | string | `"auto"` | 伪装模式：`auto`（仅非 Claude Code）、`always`、`never`。 |
+| `claude-api-key.*.cloak.strict-mode` | boolean | `false` | `true` 时删除用户系统消息，仅保留 Claude Code 提示。 |
+| `claude-api-key.*.cloak.sensitive-words` | string[] | `[]` | 需用零宽字符混淆的敏感词。 |
 
 ### OpenAI 兼容提供商
 
@@ -122,11 +127,12 @@
 | `ampcode.model-mappings[].from` | string | `""` | Amp 请求的模型名。 |
 | `ampcode.model-mappings[].to` | string | `""` | 本地可用模型名。 |
 
-## OAuth 模型映射
+## OAuth 模型别名
 
 | 参数 | 类型 | 默认值 | 描述 |
 | --- | --- | --- | --- |
-| `oauth-model-mappings` | object | `{}` | 按渠道重命名模型（gemini-cli、vertex、aistudio、antigravity、claude、codex、qwen、iflow）。 |
+| `oauth-model-alias` | object | `{}` | 按渠道为模型重命名（gemini-cli、vertex、aistudio、antigravity、claude、codex、qwen、iflow）。 |
+| `oauth-model-alias.*.*.fork` | boolean | `false` | 为 `true` 时保留原名并同时添加别名作为额外模型。 |
 | `oauth-excluded-models` | object | `{}` | 按渠道排除模型，支持通配符。 |
 
 ## Payload 规则
@@ -134,8 +140,17 @@
 | 参数 | 类型 | 默认值 | 描述 |
 | --- | --- | --- | --- |
 | `payload.default[].models[].name` | string | `""` | 匹配的模型名（可通配）。 |
-| `payload.default[].models[].protocol` | string | `""` | 限定协议：`openai`/`gemini`/`claude`/`codex`。 |
+| `payload.default[].models[].protocol` | string | `""` | 限定协议：`openai`/`gemini`/`claude`/`codex`/`antigravity`。 |
 | `payload.default[].params` | object | `{}` | 缺省时写入的 JSON 路径 → 值。 |
+| `payload.default-raw[].models[].name` | string | `""` | 匹配的模型名（可通配）。 |
+| `payload.default-raw[].models[].protocol` | string | `""` | 限定协议。 |
+| `payload.default-raw[].params` | object | `{}` | 缺省时写入的原始 JSON 路径 → 值（必须是有效 JSON）。 |
 | `payload.override[].models[].name` | string | `""` | 匹配的模型名（可通配）。 |
 | `payload.override[].models[].protocol` | string | `""` | 限定协议。 |
 | `payload.override[].params` | object | `{}` | 总是覆盖的 JSON 路径 → 值。 |
+| `payload.override-raw[].models[].name` | string | `""` | 匹配的模型名（可通配）。 |
+| `payload.override-raw[].models[].protocol` | string | `""` | 限定协议。 |
+| `payload.override-raw[].params` | object | `{}` | 总是覆盖的原始 JSON 路径 → 值（必须是有效 JSON）。 |
+| `payload.filter[].models[].name` | string | `""` | 匹配的模型名（可通配）。 |
+| `payload.filter[].models[].protocol` | string | `""` | 限定协议。 |
+| `payload.filter[].params` | string[] | `[]` | 要删除的 JSON 路径列表。 |

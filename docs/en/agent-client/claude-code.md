@@ -33,10 +33,10 @@ export ANTHROPIC_AUTH_TOKEN=sk-dummy
 # version 2.x.x
 export ANTHROPIC_DEFAULT_OPUS_MODEL=gpt-5(high)
 export ANTHROPIC_DEFAULT_SONNET_MODEL=gpt-5(medium)
-export ANTHROPIC_DEFAULT_HAIKU_MODEL=gpt-5(minimal)
+export ANTHROPIC_DEFAULT_HAIKU_MODEL=gpt-5(minimal) # we don't recommend using gpt-5(minimal), use qwen3-coder-flash or gemini-2.5-flash-lite instead
 # version 1.x.x
 export ANTHROPIC_MODEL=gpt-5
-export ANTHROPIC_SMALL_FAST_MODEL=gpt-5(minimal)
+export ANTHROPIC_SMALL_FAST_MODEL=gpt-5(minimal) # we don't recommend using gpt-5(minimal), use qwen3-coder-flash or gemini-2.5-flash-lite instead
 ```
 
 Using OpenAI GPT 5 Codex models:
@@ -46,10 +46,10 @@ export ANTHROPIC_AUTH_TOKEN=sk-dummy
 # version 2.x.x
 export ANTHROPIC_DEFAULT_OPUS_MODEL=gpt-5-codex(high)
 export ANTHROPIC_DEFAULT_SONNET_MODEL=gpt-5-codex(medium)
-export ANTHROPIC_DEFAULT_HAIKU_MODEL=gpt-5-codex(low)
+export ANTHROPIC_DEFAULT_HAIKU_MODEL=gpt-5-codex(low) # we don't recommend using gpt-5-codex(low), use qwen3-coder-flash or gemini-2.5-flash-lite instead
 # version 1.x.x
 export ANTHROPIC_MODEL=gpt-5-codex
-export ANTHROPIC_SMALL_FAST_MODEL=gpt-5-codex(low)
+export ANTHROPIC_SMALL_FAST_MODEL=gpt-5-codex(low) # we don't recommend using gpt-5-codex(low), use qwen3-coder-flash or gemini-2.5-flash-lite instead
 ```
 
 Using Claude models:

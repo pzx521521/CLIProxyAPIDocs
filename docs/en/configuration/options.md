@@ -24,6 +24,8 @@ Defaults stay aligned with `config.example.yaml`.
 | `max-retry-interval` | integer | `30` | Max wait (seconds) for cooled-down credential before retry. |
 | `routing.strategy` | string | `"round-robin"` | Credential selection when multiple match: `round-robin` or `fill-first`. |
 | `ws-auth` | boolean | `false` | Require auth for `/v1/ws`. |
+| `nonstream-keepalive-interval` | integer | `0` | Non-SSE blank line interval (seconds) to prevent idle timeout; 0 disables. |
+| `codex-instructions-enabled` | boolean | `false` | Enable official Codex instructions injection for Codex API requests. |
 | `streaming.keepalive-seconds` | integer | `0` | SSE keep-alive interval; ≤0 disables. |
 | `streaming.bootstrap-retries` | integer | `0` | Safe retries before first byte. |
 
@@ -83,6 +85,9 @@ Defaults stay aligned with `config.example.yaml`.
 | `claude-api-key.*.models.*.name` | string | `""` | Upstream model name. |
 | `claude-api-key.*.models.*.alias` | string | `""` | Client alias. |
 | `claude-api-key.*.excluded-models` | string[] | `[]` | Models to exclude (wildcards). |
+| `claude-api-key.*.cloak.mode` | string | `"auto"` | Cloaking mode: `auto` (non-Claude Code only), `always`, `never`. |
+| `claude-api-key.*.cloak.strict-mode` | boolean | `false` | `true` strips user system messages, keeps only Claude Code prompt. |
+| `claude-api-key.*.cloak.sensitive-words` | string[] | `[]` | Words to obfuscate with zero-width characters. |
 
 ### OpenAI Compatibility
 
@@ -126,7 +131,8 @@ Defaults stay aligned with `config.example.yaml`.
 
 | Parameter | Type | Default | Description |
 | --- | --- | --- | --- |
-| `oauth-model-mappings` | object | `{}` | Rename models per channel (gemini-cli, vertex, aistudio, antigravity, claude, codex, qwen, iflow). |
+| `oauth-model-alias` | object | `{}` | Rename models per channel (gemini-cli, vertex, aistudio, antigravity, claude, codex, qwen, iflow). |
+| `oauth-model-alias.*.*.fork` | boolean | `false` | When `true`, keep original and add alias as extra model. |
 | `oauth-excluded-models` | object | `{}` | Exclude models per channel; wildcards supported. |
 
 ## Payload Rules
@@ -134,8 +140,17 @@ Defaults stay aligned with `config.example.yaml`.
 | Parameter | Type | Default | Description |
 | --- | --- | --- | --- |
 | `payload.default[].models[].name` | string | `""` | Matching model name (wildcards ok). |
-| `payload.default[].models[].protocol` | string | `""` | Restrict to protocol: `openai`/`gemini`/`claude`/`codex`. |
+| `payload.default[].models[].protocol` | string | `""` | Restrict to protocol: `openai`/`gemini`/`claude`/`codex`/`antigravity`. |
 | `payload.default[].params` | object | `{}` | JSON path → value applied when missing. |
+| `payload.default-raw[].models[].name` | string | `""` | Matching model name (wildcards). |
+| `payload.default-raw[].models[].protocol` | string | `""` | Restrict to protocol. |
+| `payload.default-raw[].params` | object | `{}` | JSON path → raw JSON value applied when missing (must be valid JSON). |
 | `payload.override[].models[].name` | string | `""` | Matching model name (wildcards). |
 | `payload.override[].models[].protocol` | string | `""` | Restrict to protocol. |
 | `payload.override[].params` | object | `{}` | JSON path → value always overwritten. |
+| `payload.override-raw[].models[].name` | string | `""` | Matching model name (wildcards). |
+| `payload.override-raw[].models[].protocol` | string | `""` | Restrict to protocol. |
+| `payload.override-raw[].params` | object | `{}` | JSON path → raw JSON value always overwritten (must be valid JSON). |
+| `payload.filter[].models[].name` | string | `""` | Matching model name (wildcards). |
+| `payload.filter[].models[].protocol` | string | `""` | Restrict to protocol. |
+| `payload.filter[].params` | string[] | `[]` | JSON paths to remove from payload. |

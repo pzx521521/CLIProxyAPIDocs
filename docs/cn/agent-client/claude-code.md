@@ -33,10 +33,10 @@ export ANTHROPIC_AUTH_TOKEN=sk-dummy
 # 2.x.x 版本
 export ANTHROPIC_DEFAULT_OPUS_MODEL=gpt-5(high)
 export ANTHROPIC_DEFAULT_SONNET_MODEL=gpt-5(medium)
-export ANTHROPIC_DEFAULT_HAIKU_MODEL=gpt-5(minimal)
+export ANTHROPIC_DEFAULT_HAIKU_MODEL=gpt-5(minimal) # 不推荐使用 gpt-5(minimal)，建议使用 qwen3-coder-flash 或者 gemini-2.5-flash-lite 代替
 # 1.x.x 版本
 export ANTHROPIC_MODEL=gpt-5
-export ANTHROPIC_SMALL_FAST_MODEL=gpt-5(minimal)
+export ANTHROPIC_SMALL_FAST_MODEL=gpt-5(minimal) # 不推荐使用 gpt-5(minimal)，建议使用 qwen3-coder-flash 或者 gemini-2.5-flash-lite 代替
 ```
 
 使用 OpenAI GPT 5 Codex 模型:
@@ -46,10 +46,10 @@ export ANTHROPIC_AUTH_TOKEN=sk-dummy
 # 2.x.x 版本
 export ANTHROPIC_DEFAULT_OPUS_MODEL=gpt-5-codex(high)
 export ANTHROPIC_DEFAULT_SONNET_MODEL=gpt-5-codex(medium)
-export ANTHROPIC_DEFAULT_HAIKU_MODEL=gpt-5-codex(low)
+export ANTHROPIC_DEFAULT_HAIKU_MODEL=gpt-5-codex(low) # 不推荐使用 gpt-5-codex(low)，建议使用 qwen3-coder-flash 或者 gemini-2.5-flash-lite 代替
 # 1.x.x 版本
 export ANTHROPIC_MODEL=gpt-5-codex
-export ANTHROPIC_SMALL_FAST_MODEL=gpt-5-codex(low)
+export ANTHROPIC_SMALL_FAST_MODEL=gpt-5-codex(low) # 不推荐使用 gpt-5-codex(low)，建议使用 qwen3-coder-flash 或者 gemini-2.5-flash-lite 代替
 ```
 
 使用 Claude 模型：

@@ -89,10 +89,17 @@ routing:
 # 是否为 WebSocket API (/v1/ws) 启用认证
 ws-auth: false
 
+# 当 > 0 时，为非流式响应每隔 N 秒发送空行以防止空闲超时
+nonstream-keepalive-interval: 0
+
+# 当为 true 时，为 Codex API 请求启用官方 Codex 指令注入
+# 当为 false（默认）时，CodexInstructionsForModel 立即返回而不修改
+codex-instructions-enabled: false
+
 # 流式传输行为（SSE keep-alive 与安全启动重试）
 streaming:
-  keepalive-seconds: 15   # 默认 0（禁用）；≤0 关闭 keep-alive。
-  bootstrap-retries: 1    # 默认 0（禁用）；首字节前的重试次数。
+  keepalive-seconds: 15   # 默认：0（禁用）；≤0 关闭 keep-alive。
+  bootstrap-retries: 1    # 默认：0（禁用）；首字节前的重试次数。
 
 # Gemini API 密钥
 gemini-api-key:
@@ -146,6 +153,15 @@ claude-api-key:
       - "claude-3-*"               # 前缀通配
       - "*-thinking"               # 后缀通配
       - "*haiku*"                  # 子串通配
+    cloak:                         # 可选：为非 Claude Code 客户端进行请求伪装
+      mode: "auto"                 # "auto"（默认）：仅当客户端不是 Claude Code 时伪装
+                                   # "always"：始终应用伪装
+                                   # "never"：从不应用伪装
+      strict-mode: false           # false（默认）：将 Claude Code 提示前置到用户系统消息
+                                   # true：删除所有用户系统消息，仅保留 Claude Code 提示
+      sensitive-words:             # 可选：用零宽字符混淆的词汇
+        - "API"
+        - "proxy"
 
 # OpenAI 兼容提供商
 openai-compatibility:
@@ -207,36 +223,49 @@ ampcode:
     - from: "claude-haiku-4-5-20251001"
       to: "gemini-2.5-flash"
 
-# 全局 OAuth 模型重命名（按渠道）
-# 为模型列表与请求路由改名。
-# 支持渠道：gemini-cli、vertex、aistudio、antigravity、claude、codex、qwen、iflow。
-# 注意：不适用于 gemini-api-key、codex-api-key、claude-api-key、openai-compatibility、vertex-api-key、ampcode。
-oauth-model-mappings:
-  gemini-cli:
-    - name: "gemini-2.5-pro"          # 该渠道下的原始模型名
-      alias: "g2.5p"                  # 客户端可见别名
-      fork: true                      # true 表示保留原名并同时增加别名（默认 false）
-  vertex:
-    - name: "gemini-2.5-pro"
-      alias: "g2.5p"
-  aistudio:
-    - name: "gemini-2.5-pro"
-      alias: "g2.5p"
+# 全局 OAuth 模型名称别名（按渠道）
+# 这些别名同时用于模型列表和请求路由的模型 ID 重命名。
+# 支持的渠道：gemini-cli、vertex、aistudio、antigravity、claude、codex、qwen、iflow。
+# 注意：别名不适用于 gemini-api-key、codex-api-key、claude-api-key、openai-compatibility、vertex-api-key 或 ampcode。
+# 您可以使用不同的别名重复相同的名称，以暴露多个客户端模型名称。
+oauth-model-alias:
   antigravity:
-    - name: "gemini-3-pro-preview"
-      alias: "g3p"
-  claude:
-    - name: "claude-sonnet-4-5-20250929"
-      alias: "cs4.5"
-  codex:
-    - name: "gpt-5"
-      alias: "g5"
-  qwen:
-    - name: "qwen3-coder-plus"
-      alias: "qwen-plus"
-  iflow:
-    - name: "glm-4.7"
-      alias: "glm-god"
+    - name: "rev19-uic3-1p"
+      alias: "gemini-2.5-computer-use-preview-10-2025"
+    - name: "gemini-3-pro-image"
+      alias: "gemini-3-pro-image-preview"
+    - name: "gemini-3-pro-high"
+      alias: "gemini-3-pro-preview"
+    - name: "gemini-3-flash"
+      alias: "gemini-3-flash-preview"
+    - name: "claude-sonnet-4-5"
+      alias: "gemini-claude-sonnet-4-5"
+    - name: "claude-sonnet-4-5-thinking"
+      alias: "gemini-claude-sonnet-4-5-thinking"
+    - name: "claude-opus-4-5-thinking"
+      alias: "gemini-claude-opus-4-5-thinking"
+#   gemini-cli:
+#     - name: "gemini-2.5-pro"          # 该渠道下的原始模型名
+#       alias: "g2.5p"                  # 客户端可见别名
+#       fork: true                      # 为 true 时保留原名并同时增加别名作为额外模型（默认：false）
+#   vertex:
+#     - name: "gemini-2.5-pro"
+#       alias: "g2.5p"
+#   aistudio:
+#     - name: "gemini-2.5-pro"
+#       alias: "g2.5p"
+#   claude:
+#     - name: "claude-sonnet-4-5-20250929"
+#       alias: "cs4.5"
+#   codex:
+#     - name: "gpt-5"
+#       alias: "g5"
+#   qwen:
+#     - name: "qwen3-coder-plus"
+#       alias: "qwen-plus"
+#   iflow:
+#     - name: "glm-4.7"
+#       alias: "glm-god"
 
 # OAuth 提供商的模型排除列表
 oauth-excluded-models:
@@ -262,16 +291,35 @@ oauth-excluded-models:
 
 # 可选的 payload 配置
 payload:
-  default: # 仅在 payload 缺少对应字段时写入
+  default: # 默认规则仅在 payload 中缺少参数时设置
     - models:
-        - name: "gemini-2.5-pro" # 支持通配（如 "gemini-*"）
-          protocol: "gemini" # 限定协议：openai、gemini、claude、codex
-      params: # JSON 路径（gjson/sjson 语法）到值
+        - name: "gemini-2.5-pro" # 支持通配符（如 "gemini-*"）
+          protocol: "gemini" # 将规则限制为特定协议，选项：openai、gemini、claude、codex、antigravity
+      params: # JSON 路径（gjson/sjson 语法）-> 值
         "generationConfig.thinkingConfig.thinkingBudget": 32768
-  override: # 总是写入并覆盖已有值
+  default-raw: # 默认原始规则在缺少时使用原始 JSON 设置参数（必须是有效的 JSON）
     - models:
-        - name: "gpt-*" # 支持通配
-          protocol: "codex" # 限定协议
-      params: # JSON 路径到值
+        - name: "gemini-2.5-pro" # 支持通配符（如 "gemini-*"）
+          protocol: "gemini" # 将规则限制为特定协议，选项：openai、gemini、claude、codex、antigravity
+      params: # JSON 路径（gjson/sjson 语法）-> 原始 JSON 值（字符串按原样使用，必须是有效的 JSON）
+        "generationConfig.responseJsonSchema": "{\"type\":\"object\",\"properties\":{\"answer\":{\"type\":\"string\"}}}"
+  override: # 覆盖规则总是设置参数，覆盖任何现有值
+    - models:
+        - name: "gpt-*" # 支持通配符（如 "gpt-*"）
+          protocol: "codex" # 将规则限制为特定协议，选项：openai、gemini、claude、codex、antigravity
+      params: # JSON 路径（gjson/sjson 语法）-> 值
         "reasoning.effort": "high"
+  override-raw: # 覆盖原始规则总是使用原始 JSON 设置参数（必须是有效的 JSON）
+    - models:
+        - name: "gpt-*" # 支持通配符（如 "gpt-*"）
+          protocol: "codex" # 将规则限制为特定协议，选项：openai、gemini、claude、codex、antigravity
+      params: # JSON 路径（gjson/sjson 语法）-> 原始 JSON 值（字符串按原样使用，必须是有效的 JSON）
+        "response_format": "{\"type\":\"json_schema\",\"json_schema\":{\"name\":\"answer\",\"schema\":{\"type\":\"object\"}}}"
+  filter: # 过滤规则从 payload 中删除指定的参数
+    - models:
+        - name: "gemini-2.5-pro" # 支持通配符（如 "gemini-*"）
+          protocol: "gemini" # 将规则限制为特定协议，选项：openai、gemini、claude、codex、antigravity
+      params: # 要从 payload 中删除的 JSON 路径（gjson/sjson 语法）
+        - "generationConfig.thinkingConfig.thinkingBudget"
+        - "generationConfig.responseJsonSchema"
 ```
