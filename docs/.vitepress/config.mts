@@ -72,7 +72,8 @@ export default defineConfig({
                     {text: 'Codex', link: '/agent-client/codex'},
                     {text: 'Gemini CLI', link: '/agent-client/gemini-cli'},
                     {text: 'Factory Droid', link: '/agent-client/droid'},
-                    {text: 'Amp CLI', link: '/agent-client/amp-cli'}
+                    {text: 'Amp CLI', link: '/agent-client/amp-cli'},
+                    {text: 'OpenCode', link: '/agent-client/opencode'}
                 ]
             },
             {
